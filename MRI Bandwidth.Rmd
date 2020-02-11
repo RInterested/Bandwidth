@@ -142,12 +142,12 @@ axis(side=1,at=c(1:15),labels=c(0:14))
 
 (Nyquist = 14)
 (sampling_rate = 2 * Nyquist)
-(num_samples = length(t)/sampling_rate)
+(sample_intervals = length(t)/sampling_rate)
 ```
 
 ## Sampling result:
 ```{r, echo=F}
-b <- y1[seq(1, length(y1), num_samples)]
+b <- y1[seq(1, length(y1), sample_intervals)]
 plot(b,pch=19, col='purple',xlab='',ylab='')
 ```
 
@@ -171,13 +171,13 @@ axis(side=1,at=c(1:15),labels=c(0:14))
 
 (Nyquist = 10)
 (sampling_rate = 2 * Nyquist)
-(num_samples = length(t)/sampling_rate)
+(sample_intervals = length(t)/sampling_rate)
 ```
 
 
 ## Aliasing
 ```{r,echo=F}
-b <- y1[seq(1, length(y1), num_samples)]
+b <- y1[seq(1, length(y1), sample_intervals)]
 B <- fft(b)
 plot(abs(B)[1:15], type="h",xaxt='n',xlab='Frequencies',ylab='Strength',col=2)
 axis(side=1,at=c(1:15),labels=c(0:14))
@@ -185,7 +185,7 @@ axis(side=1,at=c(1:15),labels=c(0:14))
 
 ## Unrecognizable discretization
 ```{r, echo=F}
-b <- y1[seq(1, length(y1), num_samples)]
+b <- y1[seq(1, length(y1), sample_intervals)]
 plot(b,type='l',pch=19, cex=.5, col=2)
 ```
 
@@ -277,7 +277,7 @@ assuming other thermal and resistive components are
 relatively invariable. Hence the SNR per voxel (for 3D
 imaging) is:
 
-$$SNR \propto K (\Delta x \Delta y \Delta z)\left(\sqrt{\frac{NEX}{BW_{\text{read}}} }\right)$$
+$$\Tiny SNR \propto K (\Delta x \Delta y \Delta z)\left(\sqrt{\frac{\text{NEX}}{\text{BW}_{\text{read}}} }\right)$$
 Where $K$ represents all other imaging factors (coil, field
 strength, relaxation, tissue parameters, etc).
 
