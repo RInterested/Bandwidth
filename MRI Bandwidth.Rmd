@@ -1,0 +1,311 @@
+---
+title: "Bw in MR Data Acquisition"
+output: ioslides_presentation
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+.reveal .slides section .slideContent{
+    font-size: 6pt;
+}
+</style>
+
+## Motivation
+Receiver bandwidth (Bw$_r$ or simply Bw from now on) affects 
+
+- SNR and 
+- Artifacts. 
+
+Hence, it is relevant to protocol optimization.
+
+## Why is it even a thing? And what is it?
+
+- The RF sent back from the patient contains spatial information encoded in the different constituent frequencies.
+
+![](\Users\anton\Documents\R\images\Signal.png)
+
+- Bandwidth is the range of frequencies within the signal that the MRI magnet is set up to capture before starting a sequence.
+
+## MR Signal
+
+```{r,echo=FALSE}
+x <- seq(-10,10,0.001)
+plot(sin(x^2)/(x^2) + exp(-x^2), type='l', ylab='',xlab='', lwd=3, col="magenta")
+abline(h=0)
+```
+
+## Source of all confusion:
+
+- Bandwidth applies to k-space (Fourier or frequency domain)
+
+- Yet, sometimes defined by terms that belong to time domain:
+
+    > **Bw is the sampling frequency or rate **
+    
+    $$\text{SFr}=\frac 1 {\text{Dwell time}}$$
+    
+## For instance:
+
+>"It turns out that the receiver bandwidth and sampling frequency are practically interchangeable numbers. For most purposes, they can be thought of as identical."
+
+*Cardiovascular MRI: Physical Principles to Practical Protocols by Vivian S. Lee *
+
+## Simplified signal $f(x)= \sin(x)$
+
+```{r,echo=FALSE}
+t <- seq(0,1,1/1000)
+s = sin(2*pi*t)
+plot(s,type='l',xlab='',ylab='',xaxt='n',yaxt='n',col="magenta",lwd=3)
+abline(h=0)
+```
+
+## Fourier domain (FFT)
+
+```{r, echo=F}
+S = fft(s)
+plot(abs(S)[1:10], type="h",xaxt='n',xlab='Frequencies',ylab='Strength',col="magenta", lwd=3)
+```
+
+## More complex signal in time domain
+
+$$f(x) = \sin(3t) + 3\cos(6t)+9 \sin(9t)+6\sin(13t)$$
+```{r, echo=F}
+y = sin(2*pi*3*t)+3*cos(2*pi*6*t)+9*sin(2*pi*9*t)+6*sin(2*pi*13*t); 
+
+plot(y,type='l',col=2, lwd=3, xlab='',ylab='')
+```
+
+## Fourier domain (FFT)
+
+$$f(x) = \sin(\color{red}{3}t) + 3\cos(\color{red}{6}t)+9 \sin(\color{red}{9}t)+6\sin(\color{red}{13}t)$$
+
+```{r, echo=F}
+Y1 <- fft(y)
+plot((abs(Y1))[1:15], type="h",col=2,xaxt='n',xlab='Frequencies',ylab='Strength',
+     yaxt='n',lwd=3)
+axis(side=1,at=c(1:15),labels=c(0:14))
+```
+
+## What is the bandwidth in this example?
+
+The range of constituent frequencies: $\large 13!$
+
+$$f(x) = \sin(\color{red}{3}t) + 3\cos(\color{red}{6}t)+9 \sin(\color{red}{9}t)+6\sin(\color{red}{13}t)$$
+* Arguably it could be said that the Bw is $10 = 13 - 3$
+
+## Bandwidth is necessary to spatially map anatomy
+
+Therefore, there has to be a relationship between bandwidth and spatial resolution:
+
+$$\text{Bw}=\frac{\gamma}{2\pi}\times \vec G_f  \times \text{FoV}_f$$
+
+
+## Key concept:
+
+There has to be a correspondence between the definition of receiver bandwidth as the range of sampled frequencies in k-space and the alternative (and more common) definition as the inverse of the dwell time, sometimes symbolized as $\Delta t,$ i.e. the sampling frequency.
+
+
+## Discretization:
+
+-The RF emanating from the patient has to be digitized, and in the process, it is necessarily discretized (converted into an array or matrix of numbers (complex numbers)).
+
+-The signal is sampled at equally spaced intervals.
+
+-This process is carried out by the ADC (analog to digital converter).
+
+-These sampling points are separate from each other by $\Delta t.$
+
+-The reciprocal of $\Delta t [ \text {sec}]$ is the sampling frequency ($\text{Hz}=\frac 1 s$) 
+
+## Time / Frequency domains
+
+- This process implies that to be able to sample the range of frequencies we are interested in we are restricted in the sampling rate required.
+
+- The sampling frequency will have to be **at least** double the maximum frequency to be sampled (Nyquist limit of the digitizer).
+
+## Back to our signal...
+```{r, echo=F, border=0}
+y1 <- sin(2*pi*3*t) + 3*cos(2*pi*6*t) + 9*sin(2*pi*9*t) + 6*sin(2*pi*13*t) 
+plot(y1,type='l',col=2)
+Y1 <- fft(y1)
+plot((abs(Y1))[1:15], type="h",col='purple',xaxt='n',xlab='Frequencies',ylab='Strength',
+     yaxt='n', lwd=4)
+axis(side=1,at=c(1:15),labels=c(0:14))
+```
+
+## Nyquist = 14; sampling rate = 28
+```{r,echo=T}
+
+(Nyquist = 14)
+(sampling_rate = 2 * Nyquist)
+(num_samples = length(t)/sampling_rate)
+```
+
+## Sampling result:
+```{r, echo=F}
+b <- y1[seq(1, length(y1), num_samples)]
+plot(b,pch=19, col='purple',xlab='',ylab='')
+```
+
+## Joining the dots...
+```{r, echo=F}
+
+plot(b,pch=19, type='l', col='purple',xlab='',ylab='', lwd=3)
+
+```
+
+## Same FFT:
+
+```{r, echo=F}
+B <- fft(b)
+plot(abs(B)[1:15], type="h",xaxt='n',xlab='Frequencies',ylab='Strength',col=2, lwd=3)
+axis(side=1,at=c(1:15),labels=c(0:14))
+```
+
+## Nyquist = 10; sampling rate = 20
+```{r,echo=T}
+
+(Nyquist = 10)
+(sampling_rate = 2 * Nyquist)
+(num_samples = length(t)/sampling_rate)
+```
+
+
+## Aliasing
+```{r,echo=F}
+b <- y1[seq(1, length(y1), num_samples)]
+B <- fft(b)
+plot(abs(B)[1:15], type="h",xaxt='n',xlab='Frequencies',ylab='Strength',col=2)
+axis(side=1,at=c(1:15),labels=c(0:14))
+```
+
+## Unrecognizable discretization
+```{r, echo=F}
+b <- y1[seq(1, length(y1), num_samples)]
+plot(b,type='l',pch=19, cex=.5, col=2)
+```
+
+## Punch line:
+
+- When we set up a bandwidth, we are limiting ourselves to a particular minimal sampling frequency! Therefore, although the bandwidth is the range of frequencies to be listened to, and it is the stuff of Fourier (k-space), the sampling rate (or its inverse, the dwell time) will be somewhat determined by it.
+
+- And you will read disconcerting things like "under the Nyquist limit."
+
+## Why is the sampling rate and the bandwidth the same:
+
+- The signal received from the patient is demodulated. The carrier frequency is tossed out, leaving a range of frequencies typically in the order of a few hundred KHz, centered at zero, as for example $\pm 256 \text{KHz}.$
+
+- This would require a minimum sampling frequency at the Nyquist frequency of $2 \times 256 = 512,$ which coincides with the bandwidth $(256 - (-256) = 512).$
+
+- You could still ask... Wait a second... If the Bandwidth is $512,$ the sampling rate should be $1024,$ but this would not be correct, because we take 2 quadrature sample at each step.
+
+
+## Time and Frequency domain lexicon:
+
+![](\Users\anton\Documents\R\images\frequency_time.png)
+[Siemens](https://community.sw.siemens.com/s/article/digital-signal-processing-sampling-rates-bandwidth-spectral-lines-and-more)
+
+
+## Bandwidth and spatial resolution:
+
+*The Physics of Magnetic Resonance Imaging* Atle Bj?rnerud Department of Physics University of Oslo, March 2008
+
+![](\Users\anton\Documents\R\images\resolution.png)
+
+## Bandwidth and FoV:
+
+![](\Users\anton\Documents\R\images\FoV.png)
+
+## Bandwidth and pixel size:
+
+![](\Users\anton\Documents\R\images\pixel.png)
+
+
+## Bandwidth by manufacturer
+
+
+![](\Users\anton\Documents\R\images\bandwidth_pelvis.png)
+
+mriquestions.com
+
+- GE notes the total range in frequencies entire FoV.
+
+- Siemens and Toshiba express it per pixel. So it would divide $50$ kHz / Number of pixels in [Hz/pixel].
+
+## But Philips...
+
+WFS / Bandwidth per pixel. As you know from in-phase and out-of-phase imaging, the precession frequency of water and fat is slightly different. At 1.5 Tesla the difference is $220$ Hz. So if the bandwidth per pixel is $60$ Hz, the Bw would be given by Philips as $220 / 60 = 3.7$ pixels. 
+
+The lower the bandwidth per pixel, the higher the ratio given by Philips as the "Bandwidth". And, hence, the more contiguous pixels would be affected by chemical shift artifact. Chemical shift artifact is more prominent at lower bandwidths.
+
+## Chemical shift:
+
+>The basis of chemical shift artifacts is
+the difference in precession frequency between fat and
+water protons (3.5 ppm). At 1.5 T, this difference $(\Delta f)$
+translates to an offset of 220Hz, while at 3T, the difference
+is 440 Hz. This distinction allows the precise estimation of
+the fat/water mis-registration in the image: given field-of-
+view (FOV), bandwidth (BWread), and matrix size (N$_x$),
+one can calculate the spatial water-fat shift (WFS):
+
+$$\text{WFS}=\frac{\text{FoV} \Delta f}{N_x \text{Bw}_{\text{read}}}$$
+
+## MARS Protocol:
+
+Susceptibility equation:
+
+$$\text{susceptibility }\sim \frac{\Delta \chi\times \text{TE}\times  B_o}{\text{BW}_{\text{read}}}$$
+
+- Avoid GRE
+- Use SE and TSE
+- Lowering TE
+- Increase receiver bandwidth
+- Reducing pixel size
+
+## Signal to Noise Ratio:
+
+>MRI signal is proportional to the
+amount (and strength) of the magnetization in a voxel, and
+signal averaging. Measured noise, however, is proportional
+primarily to the acquisition readout bandwidth (BWread),
+assuming other thermal and resistive components are
+relatively invariable. Hence the SNR per voxel (for 3D
+imaging) is:
+
+$$SNR \propto K (\Delta x \Delta y \Delta z)\left(\sqrt{\frac{NEX}{BW_{\text{read}}} }\right)$$
+Where $K$ represents all other imaging factors (coil, field
+strength, relaxation, tissue parameters, etc).
+
+Med Phys Intl, 2017 *The Appearance and Origin of Common Magnetic Resonance Imaging Artifacts, and Solutions for Alleviating Their Effects* Puneet S. Sharma, PhD1 and John N. Oshinski, PhD 
+
+## Thermal noise
+
+Fluctuations in voltage across the resistor due to random thermal motion of electrons (Gaussian noise):
+
+$$\langle V^2\rangle=4kT\times R \times \text{Bw}$$
+
+where $R$ is the resistance and $T$ the temperature, and $k$ is the Boltzmann constant $1.38064852 ? 10^{-23} \text m^2 \text{kg} \text s^{-2} K^{-1}$.
+
+Described by J.B. Johnson in 1927 (called Johnson noise).
+
+
+## Noise and Bandwidth
+
+![](\Users\anton\Documents\R\images\noise.png)
+
+The receiver coils are open or receiving (data acquisition windows) during the readout phase, and therefore, the longer the dwell time, the more each data point will be the result of averaging or smoothing out potential artifacts across time.
+
+## Other Bandwidth issues:
+
+The sampling frequency (Bw) directly determines how long it takes for a full echo to be sampled.
+
+A higher bandwidth will sample more points per msec at the expense of lower SNR, but with the upside of obtaining more closely packed echoes (shorter echo spacing, ESP), enabling longer ETL's for a given TR: $\text{ESP}\sim \frac{\text{freq encoding steps}}{\text{receiver bandwidth}}.$
+
+This is important in 3D GRE sequences (cardiac MRI), not so much in SE, except for long echo train TSE (single-shot TSE), which need short ESP.
+
+## Thank you!
